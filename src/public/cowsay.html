@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<!--
+
+ A Web Client: cowsay
+
+ Copyright © 2016-2018 by Ariel Ortiz.
+ 
+ Free use of this source code is granted under the terms of the
+ GPL version 3 License.
+
+-->
+
+<html>
+  <head>
+    <title>Cowsay</title>
+    <link rel='stylesheet' href='/styles.css' />
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'>
+    </script>
+    <script src='/cowsay.js'></script>
+  </head>
+  <body>
+    <h1>cowsay @ SIGCSE 2018</h1>
+    <div id="cowsay" class="invisible">
+      <div id="balloon">
+        <p id="excerpt"></p>
+        <p id="author_paragraph">
+          &mdash; <span id="author"></span>
+        </p>
+      </div>
+        <pre>
+       \
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+        </pre>
+      <button onclick="location.reload(true)"/>Refresh</button>
+    </div>
+  </body>
+</html>

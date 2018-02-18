@@ -1,0 +1,1230 @@
+= Programming Web Services on the Cloud with Node.js
+:author: Ariel Ortiz
+:email: ariel.ortiz@itesm.mx
+:revnumber: 1.2.0
+:revdate: February 20, 2018.
+:encoding: utf-8
+:source-highlighter: pygments
+:icons: font
+:pygments-style: manni
+:toc: left
+:toclevels: 3
+:numbered:
+:data-uri:
+:imagesdir: ./images
+
+image::workshop_logo.png[]
+
+Workshop 102 @ https://sigcse2018.sigcse.org/[SIGCSE 2018]. February 21, 2018. Baltimore, MD. U.S.A.
+
+== Introduction
+
+In this workshop we'll learn how to write web services using Node.js on the Cloud9 development environment. But first let's cover some concepts.
+
+=== What is a web service?
+
+A *web service* is a service provided by a program (the _server_) that is consumed by other programs (the _clients_). The server and the clients talk to each other using the HTTP protocol. In a simplified way a web service is like a web page, but meant for a computer instead of a person.
+
+Because the communication between clients and server is carried out through a language agnostic protocol (HTTP), the clients don't have to be implemented in the same language as the server. So, for example, we can write a web service in JavaScript using Node but clients can be programmed in Python.
+
+=== What is Node.js?
+
+*Node.js* (or just Node) is a software platform that can be used to build scalable network (especially server-side) applications.
+
+* Created by Ryan Dahl and debuted in the year 2009.
+* Built on Google Chrome’s V8 JavaScript Engine. It implements http://node.green/[most parts] of the 6^th^ (June 2015), 7^th^ (June 2016) and 8^th^ (June 2017) editions of http://www.ecma-international.org/ecma-262/[ECMA-262].
+* Achieves high throughput via non-blocking I/O and a single-threaded event loop.
+* Contains a built-in HTTP server library, making it possible to run a web server without the use of external software, such as Apache, and allowing more control of how the web server works.
+* Written in C, C++, and JavaScript.
+
+=== Preparing the Cloud Development Environment
+
+IMPORTANT: It's assumed that you already have a Cloud9 account.
+
+. Go to Cloud9 (https://c9.io). If you land in the *AWS Cloud9* site press the *“Login for existing c9.io custumors”* button in the lower right hand side of the page and login.
+
+. Create a workspace: give it a name and a brief description, in team select *“Don't set a team for this workspace”*, make it *public*, and select the *Blank* template.
++
+[WARNING]
+====
+At the moment of this writing, Cloud9 free accounts allow having one *private* workspace. A private workspace uses an elaborate access scheme that makes testing web services difficult, so it's important to make your workspaces *public*.
+====
+
+. We now need to install the Node software modules that we'll be requiring. At the *terminal window* (the window labeled `bash`) type:
++
+    npm install express mysql body-parser cors request
++
+    npm install -g nodemon
+
+== Hello World!
+
+Let's start with a simple “Hello World!” server program.
+
+=== The Code
+
+Create a new file in the IDE called `hello_app.js`. Copy the following content into this file:
+
+[[hello_app]]
+.File: hello_app.js
+[source, javascript]
+----
+'use strict'; // <1>
+
+const express = require('express'); // <2>
+const app = new express(); // <3>
+
+app.get('/hello', (req, res) => { // <4>
+  res.type('text').send('Hello World!\n'); // <5>
+});
+
+app.listen(process.env.PORT, () => { // <6>
+  console.log('Server running as: ' + process.env.C9_HOSTNAME); // <7>
+});
+----
+
+Let's analyze this program:
+
+<1> Declare that the program is in _strict mode_. Strict mode is a way to introduce better error-checking into your code and also adds support to some new ECMAScript 6 features.
+
+<2> Import the http://expressjs.com/[express] module. Express is a web framework, designed to simplify the construction of web applications.
+
+<3> `app` is a newly created web application object.
+
+<4> Define an _endpoint_ (or _route_) for `app`, which is a URI (`'/hello'`) and a specific HTTP request method (`GET` in this case, but it can others like: `POST`, `PUT`, and `DELETE`). Whenever we receive a request from a client using this endpoint, the callback function will be called. It takes two parameters, `req` and `res`, that contain the information related to the HTTP request and response.
+
+<5> Set the response content type to `text/plain` and the body to `'Hello World\n'`.
+
+<6> Bind the application to a specific port (in this case the value of the environment variable `PORT`, which in practice is 8080) and start listening to client requests. The callback function is called once the binding has taken effect.
+
+<7> Print a message with the the name of our host computer (this is contained in the `C9_HOSTNAME` environment variable).
+
+To test the code, do the following:
+
+. Run the server program we just wrote. At the terminal type:
++
+    nodemon hello_app.js
++
+The output should be something like this:
++
+----
+[nodemon] 1.15.0
+[nodemon] to restart at any time, enter `rs`
+[nodemon] watching: *.*
+[nodemon] starting `node hello_app.js`
+Server running as: host-name
+----
++
+Take note of _host-name_ because you'll need it when testing your web services from a web browser.
++
+NOTE: The `nodemon` command will watch the files in the directory in which it was started, and if any files change, `nodemon` will automatically restart your node application. This behavior is useful during development. In production, or when running a node program that is not a server, just use the command `node` instead of `nodemon`.
+
+. Test the server using the https://en.wikipedia.org/wiki/CURL[_curl_] command as the client. Open a new terminal window (from the Cloud9 menu select “Window/New Terminal”) and type there:
++
+    curl -i localhost:8080/hello
++
+NOTE: We use `localhost:8080` because _curl_ is running in the same machine as the server. If this is not the case, use the _host-name_ obtained in step 1.
++
+You should see an output like this:
++
+----
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: text/plain; charset=utf-8
+Content-Length: 13
+ETag: W/"d-oLZZOWcLwsAQ9NXWoLPk5FkPuSs"
+Date: Tue, 13 Feb 2018 00:49:56 GMT
+Connection: keep-alive
+
+Hello World!
+----
++
+_Curl's_ `-i` option allows us to see the complete HTTP response: status line, headers and body (and an empty line separating the headers and the body).
+
+. Let's now use a web browser as the client for our server. Open a new tab in your browser and type in the address bar:
++
+====
+_host-name_/hello
+====
++
+Don't forget to replace _host-name_ with the correct value displayed by the server in step 1. You should see now a page containing only the text: `Hello World!`.
+
+. Press `Ctrl-C` at the terminal where the server is running in order to terminate it.
+
+=== Exercise A ★
+
+Modify the `<<hello_app, hello_app.js>>` program so that it can greet anyone. The name of the greetee will be specified as a https://en.wikipedia.org/wiki/Query_string[query string] parameter using https://en.wikipedia.org/wiki/Percent-encoding[URL encoding]. This means that the URL to test your program should be something like this:
+
+====
+_host-name_/hello?who=Random+User
+====
+
+In this case the name of the parameter is `who` and its value is the string `"Random User"`. Note that in the URL spaces should be replaced with the plus (`+`) character.
+
+If the parameter `who` was not provided, your program should respond: `Hello Anonymous!`.
+
+[TIP]
+====
+To read a query string parameter named `some_parameter` use the following expression inside the callback function for `app.get()`: `req.query.some_parameter`
+
+This expression evaluates to `undefined` if `some_parameter` is not present.
+====
+
+Test your changes with the following examples. Type at the terminal:
+
+    curl localhost:8080/hello?who=Random+User
+
+The output should be:
+
+    Hello Random User!
+
+Now type:
+
+    curl localhost:8080/hello
+
+Expected output:
+
+    Hello Anonymous!
+
+== Quotations
+
+This example is a much larger program. It consists of a Quotations database in MySQL. We'll provide a way of accessing this database using a RESTful API.
+
+=== RESTful Web Services
+
+REST stands for *Representational State Transfer*. It relies on a stateless, client-server, cacheable communications protocol. REST is an *architectural style* for designing networked applications. RESTful applications use HTTP requests to post and put data (create and/or update), read data (make queries), and delete data. Thus, REST uses HTTP for all four *CRUD* (Create/Read/Update/Delete) operations (see table <<crud_table, table 1>>). When building web services the use of REST is often preferred over the more heavyweight SOAP (Simple Object Access Protocol) style because REST is less complex and does not leverage as much bandwidth, which makes it a better fit for use over the Internet.
+
+[[crud_table]]
+.CRUD/HTTP/SQL Mapping
+[cols="^,^,^,^,^"]
+|===
+|CRUD Operation |HTTP Method |SQL Statement|Idempotent?|Safe?
+
+|Create | POST | INSERT|No|No
+|Read | GET | SELECT|Yes|Yes
+|Update | PUT | UPDATE|Yes|No
+|Delete | DELETE | DELETE|Yes|No
+|===
+
+[NOTE]
+====
+We say an operation is *idempotent* if it can be applied multiple times without changing the result beyond the initial application. For example, in mathematics the absolute value is an idempotent operation: applying it once or multiple times gives us the same answer.
+
+An operation is *safe* if it's only used for data retrieval (it doesn't have any side-effects on the server).
+====
+
+REST was defined by Roy Thomas Fielding in his 2000 PhD dissertation http://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm[“Architectural Styles and the Design of Network-based Software Architectures”].
+
+=== API Guidelines
+
+REST is more a collection of principles than it is a set of standards. There are “best practices” and de-facto standards but those are constantly evolving. Fortunately for us, there are a couple of documents, both written by Todd Fredrich, that provide some useful guidelines on things to consider when writing RESTful APIs:
+
+* https://github.com/RestCheatSheet/api-cheat-sheet#api-design-cheat-sheet[REST API Design Cheat Sheet]
+* https://github.com/tfredrich/RestApiTutorial.com/raw/master/media/RESTful%20Best%20Practices-v1_2.pdf[REST API Best Practices: Recommendations for Creating Web Services]
+
+Our example will incorporate several recommendations from these documents. Specifically:
+
+. We'll use a noun to name our resource, not a verb, and it will be in plural form (`'quotations'` instead of `'quotation'`).
+. We'll use the _Collection Metaphor_. This means that our resource is going to have two endpoints:
+  ** `'/quotations'` -- for the complete resource collection.
+  ** `'/quotations/{ID}'` -- for each individual resource within the collection.
+. We'll supply links in the response body for retrieval of the resource object itself or related objects. This is a constraint of the REST application architecture known as https://en.wikipedia.org/wiki/HATEOAS[HATEOAS] (Hypermedia as the Engine of Application State).
+. We'll use HTTP methods to mean something useful:
+  ** `GET` -- Read a resource or collection.
+  ** `POST` -- Create.
+  ** `PUT` -- Update.
+  ** `DELETE` -- Remove a resource or collection.
+. We'll make sure that the `GET`, `PUT` and `DELETE` operations are idempotent.
+. We'll use the http://json.org/[JSON] format for the request and response bodies.
+. We'll use meaningful HTTP status codes:
+  ** 200 -- _OK_. The request was successful.
+  ** 201 -- _Created_. New resource was created successfully.
+  ** 400 -- _Bad Request_. Malformed syntax or a bad query.
+  ** 404 -- _Not Found_. Requested resource does not exist.
+
+=== Setting Up the Database
+
+To get MySQL running in the Cloud9 environment, type at the terminal:
+
+    mysql-ctl install
+
+The output will be something like this:
+
+----
+MySQL 5.5 database added.  Please make note of these credentials:
+
+Root User: username
+Database Name: c9
+----
+
+[WARNING]
+====
+Because MySQL has a blank password by default, setup is significantly easier for users. Additionally, since developers generally don't (and often shouldn't) put sensitive/important data in a development environment like Cloud9, having no password on MySQL is rarely an issue.
+====
+
+To start MySQL, at the terminal type:
+
+    mysql-ctl start
+
+To stop MySQL, type:
+
+    mysql-ctl stop
+
+Our database will only have one table, called `quotations`, with three columns (see <<quotations_table, Table 2>>).
+
+[[quotations_table]]
+.Quotations Table
+[cols="1,5"]
+|===
+| Column Name | Description
+
+| `id` | The unique integer quotation ID.
+| `author` | A text value with the name of the quotation author.
+| `excerpt` | A text value with the quotation body.
+|===
+
+Let's download a script that will simplify the creation of the database. Type at the terminal:
+
+    wget -O quotations.sql http://goo.gl/k9Uix2
+
+To execute the `quotations.sql` script, open the Cloud9 MySQL command tool. At the terminal type:
+
+    mysql-ctl cli
+
+At the MySQL monitor (the shell with `mysql>` prompt) type:
+
+    source quotations.sql
+
+This command creates the database table and populates it with some 50 quotations. Press `Ctrl-D` to exit the MySQL monitor.
+
+This is the Node code to connect to the database:
+
+[source, javascript]
+----
+const mysql = require('mysql');
+
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'username', // <-- Update this line with your username.
+  database: 'c9'
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('Unable to connect to the database.');
+    throw err;
+  } else {
+    console.log('Connected to the database.');
+  }
+});
+----
+
+The following snippet is an example on how to use the database connection to execute a SQL statement. In this case we select all columns from the `quotations` table:
+
+[source, javascript]
+----
+db.query(
+  'SELECT * FROM quotations',
+  (err, rows) => {
+    if (err) throw err;
+    for (let row of rows) {
+      console.log(row.author);
+    }
+    db.end(); // <1>
+  }
+);
+----
+
+<1> The `end()` method closes the database connection. We usually don't do this in our server code because it's more convenient to keep the connection open indefinitely.
+
+[NOTE]
+====
+Check these links to get more information regarding on how to use a MySQL database:
+
+* https://docs.c9.io/v1.0/docs/setup-a-database[Cloud9: Set Up a Database]
+* https://docs.c9.io/docs/setting-up-mysql[Cloud9: Setting Up MySQL]
+* https://www.npmjs.com/package/mysql[The mysql Module Documentation]
+====
+
+=== Adding Middleware to the Server
+
+We need our server to have some additional functionality:
+
+* We want to be able to parse the body of client requests as JSON objects.
+* We want to eliminate any possible issues regarding https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[cross-origin resource sharing] (CORS) when programming Ajax clients.
+* We want to serve static resources (static HTML pages, images, cascading style sheets, client-side JavaScript, etc.).
+
+All this functionality can be added to our server using _middleware_. Express _middleware_ allows us to plug in a stack of actions that need to be executed.
+
+To do this we first import the modules that provide the needed functionality:
+
+[source, javascript]
+----
+const bodyParser = require('body-parser');
+const cors = require('cors');
+----
+
+We then add them to the `app` object:
+
+[source, javascript]
+----
+app.use(bodyParser.json());
+app.use(cors());
+----
+
+We also need to add two other configuration lines:
+
+[source, javascript]
+----
+app.use(express.static('public')); // <1>
+app.set('json spaces', 2); // <2>
+----
+
+<1> Tell the server that anything inside the `'public'` directory is a static resource. Thanks to this, we don't need to install and configure a full-blown web server such as Apache.
+
+<2> Indicate that any JSON output in the response must be automatically formatted (prettified) using the specified number of spaces.
+
+[TIP]
+====
+Values recommended: 2 in development, 0 in production.
+====
+
+=== GET /quotations
+
+Let's first write a web service that returns a list with partial information of all the quotations available in the database.
+
+[source, javascript]
+----
+app.get('/quotations', (req, res) => { // <1>
+  db.query('SELECT id, author FROM quotations', (err, rows) => { // <2>
+    if (err) {
+      res.status(500).json(err); // <3>
+    } else {
+      let result = rows.map(row => // <4>
+        ({
+           id: row.id,
+           author: row.author,
+           url: makeUrl(row.id)
+         })
+      );
+      res.json(result); // <5>
+    }
+  });
+});
+----
+<1> The URI for our web service endpoint is `'/quotations'`.
+
+<2> Extract from our table the _id_ and _author_ information of every single quotation.
+
+<3> Any SQL/database error will be dealt as an “internal server error” (status code 500). We convert the error object to JSON and send it back as the body of the response.
+
+<4> Map every element of the result set into an object with the information (`id`, `author`, and `url`) we wish to provide. The `url` is the web link we'll use to retrieve single quotation objects later on (see: <<get_single_quotation,  `GET /quotations/{ID}`>>).
+
+<5> Respond with an implicit status code 200, returning the resulting array as a JSON object.
+
+The implementation of the `makeUrl()` function used above is as follows:
+
+[source, javascript]
+----
+function makeUrl(id) {
+  return 'http://' + process.env.C9_HOSTNAME + '/quotations/' + id;
+}
+----
+
+The following program puts together everything we've described so far:
+
+.File: quotations_app.js
+[source, javascript]
+----
+'use strict';
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
+app.use(express.static('public'));
+app.set('json spaces', 2);
+
+app.listen(process.env.PORT, () => {
+  console.log('Web server running as: ' + process.env.C9_HOSTNAME);
+});
+
+const mysql = require('mysql');
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'username', // <-- Update this line with your username.
+  database: 'c9'
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('Unable to connect to the database.');
+    throw err;
+  } else {
+    console.log('Connected to the database.');
+  }
+});
+
+function makeUrl(id) {
+  return 'http://' + process.env.C9_HOSTNAME + '/quotations/' + id;
+}
+
+app.get('/quotations', (req, res) => {
+  db.query('SELECT id, author FROM quotations', (err, rows) => {
+    if (err) {
+      res.status(500).json(err);
+    } else {
+      let result = rows.map(row =>
+        ({
+           id: row.id,
+           author: row.author,
+           url: makeUrl(row.id)
+         })
+      );
+      res.json(result);
+    }
+  });
+});
+----
+
+To test the server program, type at the terminal:
+
+    nodemon quotations_app
+
+Now run _curl_ as a client. At another terminal window, type:
+
+    curl localhost:8080/quotations
+
+You should see a huge list containing all the objects representing the information of every quotation in the database, something like this:
+
+----
+[
+  {
+    "id": 1,
+    "author": "Harold Abelson",
+    "url": "http://host-name/quotations/1"
+  },
+  {
+    "id": 2,
+    "author": "Alan Kay",
+    "url": "http://host-name/quotations/2"
+  },
+  {
+    "id": 3,
+    "author": "Donald Knuth",
+    "url": "http://host-name/quotations/3"
+  },
+
+  ... (46 quotations omitted)
+
+  {
+    "id": 50,
+    "author": "Aristotle",
+    "url": "http://host-name/quotations/50"
+  }
+]
+----
+
+=== Exercise B ★
+
+Modify the `GET /quotations` web service so that it takes an optional query string parameter called `sort`. If this parameter is equal to `false` or if it wasn't provided, the web service should behave as it currently does. On the other hand, if the parameter is equal to `true`, then the returned list of quotation objects should be sorted by `author` in ascending order. Use _curl_ to test your modified web service.
+
+These two commands should produce the same output that we had before:
+
+    curl localhost:8080/quotations?sort=false
+
+    curl localhost:8080/quotations
+
+But this command:
+
+    curl localhost:8080/quotations?sort=true
+
+should produce a different output, something like this:
+
+----
+[
+  {
+    "id": 2,
+    "author": "Alan Kay",
+    "url": "http://host-name/quotations/2"
+  },
+  {
+    "id": 27,
+    "author": "Alan Kay",
+    "url": "http://host-name/quotations/27"
+  },
+  {
+    "id": 29,
+    "author": "Alan Kay",
+    "url": "http://host-name/quotations/29"
+  },
+
+  ... (46 quotations omitted)
+
+  {
+    "id": 46,
+    "author": "Thomas Watson",
+    "url": "http://host-name/quotations/46"
+  }
+]
+----
+
+[TIP]
+====
+Use the `SELECT -- ORDER BY` SQL clause to solve this problem.
+====
+
+[[exercise_c]]
+=== Exercise C ★
+
+Modify the `GET /quotations` web service so that each individual quotation object of the resulting list has an additional `prelude` property, comprised of the first three words of the `excerpt` followed by an ellipsis (`'\...'`).
+
+For example, the _curl_ command:
+
+    curl localhost:8080/quotations
+
+should now produce this output:
+
+----
+[
+  {
+    "id": 1,
+    "author": "Harold Abelson",
+    "prelude": "Programs must be...",
+    "url": "http://host-name/quotations/1"
+  },
+  {
+    "id": 2,
+    "author": "Alan Kay",
+    "prelude": "Technology is anything...",
+    "url": "http://host-name/quotations/2"
+  },
+  {
+    "id": 3,
+    "author": "Donald Knuth",
+    "prelude": "Everyday life is...",
+    "url": "http://host-name/quotations/3"
+  },
+
+  ... (46 quotations omitted)
+
+  {
+    "id": 50,
+    "author": "Aristotle",
+    "prelude": "We are what...",
+    "url": "http://host-name/quotations/50"
+  }
+]
+----
+
+[TIP]
+====
+This problem can be solved easily using these JavaScript functions: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/split[`split()`], https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/slice[`slice()`], and https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/join[`join()`].
+====
+
+[[text_client]]
+=== Text Clients
+
+We can write client programs that access our Quotations web service using any language with libraries that support HTTP GET requests. The following programs are simple text clients that call our web service and print to the standard output the `id` and `author` of all the quotations.
+
+All these programs produce this exact same output:
+
+----
+1 - Harold Abelson
+2 - Alan Kay
+3 - Donald Knuth
+
+... (46 quotations omitted)
+
+50 - Aristotle
+----
+
+==== JavaScript (ECMAScript 6)
+
+.File: quotations_client.js
+[source, javascript]
+----
+'use strict';
+
+const request = require('request');
+const URL = 'http://localhost:8080/quotations';
+
+request(URL, (err, response, body) => {
+  if (err || response.statusCode !== 200) {
+    console.error('ERROR: ' + (err || body));
+  } else {
+    let result = JSON.parse(body);
+    for (let q of result) {
+      console.log('%d - %s', q.id, q.author);
+    }
+  }
+});
+----
+
+To run this program, type at the terminal:
+
+    node quotations_client.js
+
+==== Python 3
+
+.File quotations_client.py
+[source, python3]
+----
+from http.client import HTTPConnection
+from sys import stderr
+from json import loads
+
+conn = HTTPConnection('localhost:8080')
+try:
+    conn.request('GET', '/quotations')
+    res = conn.getresponse()
+    body = res.read().decode('utf-8')
+    if res.status != 200:
+        raise Exception(str(res.status) + ' '
+            + res.reason + '. ' + body)
+    for q in loads(body):
+        print('{0} - {1}'.format(q['id'], q['author']))
+except Exception as err:
+    print('ERROR: ' + str(err), file=stderr)
+----
+
+To run this program, type at the terminal:
+
+    python3 quotations_client.py
+
+==== Java 8
+
+.File: QuoationsClient.java
+[source, java]
+----
+package sigcse2018.workshop;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+class QuoationsClient {
+
+    public static final String URL_STRING = "http://localhost:8080/quotations";
+
+    public static void main(String[] args) throws Exception {
+        URL url = new URL(URL_STRING);
+        try {
+            HttpURLConnection conn =
+                (HttpURLConnection) url.openConnection();
+            conn.connect();
+            try (BufferedReader br =
+                    new BufferedReader(
+                        new InputStreamReader(conn.getInputStream()))) {
+                StringBuilder body = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    body.append(line);
+                }
+                JSONParser parser = new JSONParser();
+                JSONArray list = (JSONArray) parser.parse(body.toString());
+                for (Object obj : list) {
+                    JSONObject q = (JSONObject) obj;
+                    System.out.printf("%d - %s%n",
+                        q.get("id"), q.get("author"));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("ERROR: " + e);
+        }
+    }
+}
+----
+
+To run this program, follow these steps:
+
+. Install in your Cloud9 workspace the OpenJDK 8. Type at the terminal:
++
+    sudo add-apt-repository ppa:openjdk-r/ppa
++
+    sudo apt-get update
++
+    sudo apt-get install openjdk-8-jdk
++
+Use the following command to switch between Java versions and select Java 8:
++
+    sudo update-alternatives --config java
++
+Make sure your system is using the correct JDK:
++
+    java -version
++
+The output should be something like:
++
+    openjdk version "1.8.0_141"
+    OpenJDK Runtime Environment (build 1.8.0_141-8u141-b15-3~14.04-b15)
+    OpenJDK 64-Bit Server VM (build 25.141-b15, mixed mode)
+
+. Download the `json-simple` JAR file. This allows us to work with JSON in Java. At the terminal type:
++
+    wget -O json-simple-1.1.1.jar https://goo.gl/BYFvrm
+
+. Compile the program. Type:
++
+    javac -d . -cp json-simple-1.1.1.jar QuotationsClient.java
+
+. Execute the compiled program. Type at the terminal:
+
+    java -cp .:json-simple-1.1.1.jar sigcse2018.workshop.QuoationsClient
+
+=== Exercise D ★
+
+Modify any of the programs from the <<text_client>> section so that it displays the `prelude` property that was added to the objects of the result list of our web service in <<exercise_c, Exercise C>>.
+
+The output of your modified client program should look like this:
+
+----
+1 - Harold Abelson: Programs must be...
+2 - Alan Kay: Technology is anything...
+3 - Donald Knuth: Everyday life is...
+
+  ... (46 quotations omitted)
+
+50 - Aristotle: We are what...
+----
+
+[[get_single_quotation]]
+=== GET /quotations/{ID}
+
+Let's now write a web service for retrieving a single quotation with a particular ID:
+
+.File: quotations_app.js (add this code to the end of the file)
+[source, javascript]
+----
+app.get('/quotations/:id', (req, res) => { // <1>
+  db.query('SELECT id, author, excerpt FROM quotations WHERE id = ?', // <2>
+    [req.params.id], // <3>
+    (err, rows) => {
+      if (err) {
+        res.status(500).json(err);
+      } else {
+        let row = rows[0];
+        if (row) { // <4>
+          res.json({ // <5>
+            id: row.id,
+            author: row.author,
+            excerpt: row.excerpt,
+            url: makeUrl(row.id)
+          });
+        } else {
+          res.type('text').status(404).send('Resource not found.\n'); // <6>
+        }
+      }
+    });
+});
+----
+
+The code is quite similar to the previous web service, but with some important differences:
+
+<1> The URI for our web service endpoint is `'/quotations/:id'`. This allows us to use `:id` as named route parameter; its value can be obtained with the expression: `req.params.id`.
+
+<2> Extract from our table the _id_, _author_, and _excerpt_ information of the specific quotation that has the same ID as the one indicated in the request.
+
+<3> Any value contained in this array will be correctly inserted in the previous SQL statement, replacing the corresponding placeholder symbol (`?`). This eliminates https://en.wikipedia.org/wiki/SQL_injection[SQL injections] vulnerabilities.
+
+<4> If the SQL statement result is a single row, that means we found the requested quotation.
+
+<5> In that case, respond with an implicit status code 200, returning the resulting row as a JSON object.
+
+<6> Otherwise `row` is `undefined`, so respond with a status code 404 and a message stating that the resource was not found.
+
+Let's use _curl_ again, now to retrieve a single quotation. At a terminal type:
+
+    curl localhost:8080/quotations/42
+
+The output should be:
+
+----
+{
+  "id": 42,
+  "author": "Douglas Adams",
+  "excerpt": "A common mistake that people make when trying to design something completely foolproof is to underestimate the ingenuity of complete fools.",
+  "url": "http://host-name/quotations/42"
+}
+----
+
+=== A Web Client: cowsay
+
+We'll now show the code for an HTML client that employs our two RESTful web services. This application is a combination of two classical Unix programs: https://en.wikipedia.org/wiki/Fortune_%28Unix%29[_fortune_] and https://en.wikipedia.org/wiki/Cowsay[_cowsay_]. It'll display an ASCII picture of a cow with a random quotation.
+
+Follow these steps:
+
+. Create a directory called `public`. At the terminal type:
+
+    mkdir public
+
+. Create a CSS file called `styles.css` in the `public` directory:
++
+.File: public/styles.css
+[source, css]
+----
+body {
+  color: #DCDCDC;
+  background: #1D1D1D;
+  padding: 0 2em;
+  margin: 0;
+  font-family: sans-serif;
+  font-size: 20px;
+}
+
+h1 {
+  color: White;
+  font-size: 180%;
+}
+
+.invisible {
+  display: none;
+}
+
+#author_paragraph {
+  text-align: right;
+  font-size: 80%;
+  font-style: italic;
+}
+
+#cowsay {
+  color: Chartreuse;
+}
+
+#cowsay pre {
+  margin-top: 0px;
+  font-size: 150%;
+  font-weight: bold;
+}
+
+button {
+  background-color: Cornsilk;
+  border: none;
+  color: black;
+  padding: 10px 15px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  margin: 4px 2px;
+  font-size: 110%;
+  cursor: pointer;
+  border-radius: 20px;
+  margin-right: 20px;
+}
+
+#balloon {
+  box-sizing: border-box;
+  padding: 10px 30px;
+  border: 5px dashed Chartreuse;
+  border-radius: 20px;
+  width: 500px;
+}
+----
+
+. In the `public` directory, create a JavaScript file called `cowsay.js`:
++
+.File: public/cowsay.js
+[source, javascript]
+----
+/* global $ */
+
+var QUOTATION_URL = 'http://host-name/quotations/'; // <-- Update the host-name
+
+function start() {
+  $.ajax({
+    url: QUOTATION_URL,
+    method: 'GET'
+  })
+  .done(getAllQuotations)
+  .fail(displayError);
+}
+
+function getAllQuotations (quotations) {
+  var rndNum = (quotations.length * Math.random()) | 0;
+  $.ajax({
+    url: quotations[rndNum].url,
+    method: 'GET'
+  })
+  .done(getOneQuote)
+  .fail(displayError);
+}
+
+function getOneQuote (quote) {
+  $('#excerpt').text(quote.excerpt);
+  $('#author').text(quote.author);
+  $('#cowsay').show();
+}
+
+function displayError (err) {
+  alert(JSON.stringify(err));
+}
+
+$(start);
+----
+
+. Create an HTML file called `cowsay.html` and place it in the `public` directory:
++
+.File: public/cowsay.html
+[source, html]
+----
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cowsay</title>
+    <link rel='stylesheet' href='/styles.css' />
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'>
+    </script>
+    <script src='/cowsay.js'></script>
+  </head>
+  <body>
+    <h1>cowsay @ SIGCSE 2018</h1>
+    <div id="cowsay" class="invisible">
+      <div id="balloon">
+        <p id="excerpt"></p>
+        <p id="author_paragraph">
+          &mdash; <span id="author"></span>
+        </p>
+      </div>
+        <pre>
+       \
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+        </pre>
+      <button onclick="location.reload(true)"/>Refresh</button>
+    </div>
+  </body>
+</html>
+
+----
+
+. Now, place the URL `host-name/cowsay.html` in your browser's address bar. You should see something like this:
++
+image::cowsay.png[]
+
+[[put_single_quotation]]
+=== PUT /quotations/{ID}
+
+The code for a RESTful web service that updates a specific quotation would look like this:
+
+.File: quotations_app.js (add this code to the end of the file)
+[source, javascript]
+----
+app.put('/quotations/:id', (req, res) => { // <1>
+  let id = req.params.id;
+  let body = getBody(req); // <2>
+  if (body) {
+    db.query('UPDATE quotations SET author=?, excerpt=? WHERE id=?', // <3>
+      [body.author, body.excerpt, id],
+      (err, result) => {
+        if (err) {
+          res.status(500).json(err);
+        } else {
+          if (result.affectedRows === 1) { // <4>
+            res.type('text').send(
+              'Resource with ID = ' + id + ' updated.\n');
+          } else {
+            res.type('text').status(400).send(
+              'Unable to update resource with ID = ' + id + '.\n'); // <5>
+          }
+        }
+      });
+  } else {
+    res.type('text').status(400).send(
+      'Bad data. No resource updated.\n'); // <6>
+  }
+});
+----
+
+<1> Notice that we use the HTTP `PUT` method and that we indicate in the URI the ID of the specific quotation to modify.
+
+<2> The `getBody()` function used here verifies two things:
+
++
+
+- That the content type of the request body is declared to be `application/json`.
+
+- That the JSON request body actually contains two properties: `author` and `excerpt`.
+
++
+If any of these conditions is not met, the function returns `undefined`. Otherwise it returns a new object with the corresponding values of `author` and `excerpt` provided by the client request.
+
+<3> Execute the update SQL statement.
+
+<4> If the update was successful the `result.affectedRows` property should be equal to one.
+
+<5> Otherwise, respond with a status code 400 and an error message because the request produced a bad query.
+
+<6> Also respond with a status code 400 and an error message if the request body is not what's expected.
+
+This is the code for `getBody()` function:
+
+.File: quotations_app.js (add this code to the end of the file)
+[source, javascript]
+----
+function getBody(req) {
+  let body = req.body;
+  let correctContentType =
+    req.headers['content-type'].startsWith('application/json');
+  let correctProperties =
+    body.author !== undefined && body.excerpt !== undefined;
+
+  if (correctContentType && correctProperties) {
+    return { author: body.author, excerpt: body.excerpt };
+  } else {
+    return undefined;
+  }
+}
+----
+
+We'll use _curl_ to test our new web service. Type at another terminal:
+
+    curl localhost:8080/quotations/1 \
+    -X PUT \
+    -H 'Content-Type: application/json' \
+    -d '{"author":"Somebody","excerpt":"Some smart quotation."}'
+
+Notice that we need to specify not only the URL, but also:
+
+* The HTTP method we want use (with the `-X` option).
+* A request header with the content type of the body (with the `-H` option).
+* The JSON request body itself (with the `-d` option).
+
+The expected output is:
+
+    Resource with ID = 1 updated.
+
+To verify that the quotation was actually updated use the <<get_single_quotation, `GET /quotations/{ID}`>> web service:
+
+    curl localhost:8080/quotations/1
+
+You should now see the updated quotation with the new `author` and `excerpt` values:
+
+----
+{
+  "id": 1,
+  "author": "Somebody",
+  "excerpt": "Some smart quotation.",
+  "url": "http://host-name/quotations/1"
+}
+----
+
+=== Exercise E ★★
+
+Write a web service for deleting a specific quotation. The endpoint definition of this service should look something like this:
+
+[source, javascript]
+----
+app.delete('/quotations/:id', (req, res) => {
+  // ...
+});
+----
+
+[TIP]
+====
+The delete SQL statement that you need to use has the following syntax:
+
+*DELETE FROM* _table-name_ *WHERE* _column-name_ = _value_
+====
+
+Use _curl_ to test your code:
+
+    curl localhost:8080/quotations/7 -X DELETE
+
+If the deletion is performed correclty the output should be a text message like this:
+
+    Resource with ID = 7 deleted successfully.
+
+If the deletion is unsuccessful (for example, if you try to delete the same quotation again), the output should be:
+
+    Unable to delete resource with ID = 7.
+
+Also, the response's status code must be 404 in this case.
+
+TIP: Check that the property `result.affectedRows` is equal to one to make sure the deletion was successful.
+
+=== Exercise F ★★
+
+Write a web service for creating a new quotation. The endpoint definition of this service should look something like this:
+
+[source, javascript]
+----
+app.post('/quotations', (req, res) => {
+  // ...
+});
+----
+
+[TIP]
+====
+The MySQL statement to insert a new row in the database has the following syntax:
+
+*INSERT INTO* _table-name_ *SET* _column-name~1~_ = _value~1~_, _column-name~2~_ = _value~2~_, ..., _column-name~n~_ = _value~n~_
+====
+
+Just like in the <<put_single_quotation, `PUT /quotations/{ID}`>> web service, the request body should contain a JSON object with property names and values for `author` and `excerpt`. If this is not the case, respond with a status code 400 and a “bad data” error message.
+
+TIP: In the callback function for `db.query()` use the property `result.insertId` to get the ID of the newly created quotation.
+
+The response must include a header, called `location`, containing the URL of the new quotation.
+
+TIP: Use the method `res.set("header-name", "value")` to add headers to the response.
+
+If the insertion is successful, the response's status code must be 201.
+
+Test your code using _curl_:
+
+    curl -i \
+    localhost:8080/quotations \
+    -X POST \
+    -H 'Content-Type: application/json' \
+    -d '{"author":"Yoda","excerpt":"Do. Or do not. There is no try."}'
+
+The output should look something like this:
+
+----
+HTTP/1.1 201 Created
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+location: http://host-name/quotations/51
+Content-Type: text/plain; charset=utf-8
+Content-Length: 35
+ETag: W/"23-5X8GXSZXn9kSgCHhGqMb0lUWiKk"
+Date: Sun, 18 Feb 2018 06:27:31 GMT
+Connection: keep-alive
+
+New resource created with ID = 51.
+----
+
+Specifically note the response's status code and the `location` header.
+
+== Resources
+
+=== Workshop Repository
+
+You can download all the files related to this workshop (these notes, source code, solutions to exercises) from the following github repository:
+
+* https://github.com/ariel-ortiz/sigcse2018-workshop102
+
+=== Useful Web Links
+
+* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference[JavaScript reference]
+* http://nodejs.org/api/index.html[Node.js Manual & Documentation]
+* http://expressjs.com/en/api.html[Express API Reference]
+
+=== Books
+* http://www.amazon.com/Beginning-Node-js-Basarat-Syed/dp/1484201884/ref=la_B00NC9W7PW_1_1?s=books&ie=UTF8&qid=1457070302&sr=1-1[Beginning Node.js] by Basarat Syed
+* https://www.amazon.com/RESTful-Web-API-Design-Node-js-ebook/dp/B01BDQK5C2/ref=sr_1_1?s=books&ie=UTF8&qid=1518629947&sr=1-1[RESTful Web API Design with Node.js - Second Edition] by Valentin Bojinov
+
+== Copyright and License
+
+* Copyright © 2016-2018 by Ariel Ortiz. 
+* This work is licensed under a http://creativecommons.org/licenses/by-nc-sa/4.0/[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License]. 
+* Free use of the source code presented here is granted under the terms of the https://www.gnu.org/licenses/gpl-3.0.en.html[GPL version 3 License].

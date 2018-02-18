@@ -1,0 +1,17 @@
+= Programming Web Services on the Cloud with Node.js
+
+How to generate the HTML page with the workshop notes:
+
+* Install the `asciidoctor` and `pygments.rb` Ruby gems. At the terminal type:
+
+        gem install asciidoctor pygments.rb 
+
+* Move to the `docs` directory.
+
+        cd docs
+
+* Run `asciidoctor` on the `webservices.adoc` file:
+ 
+        asciidoctor webservices.adoc
+
+The resulting file is: `webservices.html`.
