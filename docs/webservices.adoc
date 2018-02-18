@@ -41,7 +41,7 @@ Because the communication between clients and server is carried out through a la
 
 IMPORTANT: It's assumed that you already have a Cloud9 account.
 
-. Go to Cloud9 (https://c9.io). If you land in the *AWS Cloud9* site press the *“Login for existing c9.io custumors”* button in the lower right hand side of the page and login.
+. Go to Cloud9 (https://c9.io). If you land in the *AWS Cloud9* site press the *“Login for existing c9.io customers”* button in the lower right hand side of the page and login.
 
 . Create a workspace: give it a name and a brief description, in team select *“Don't set a team for this workspace”*, make it *public*, and select the *Blank* template.
 +
@@ -284,7 +284,7 @@ Our database will only have one table, called `quotations`, with three columns (
 
 Let's download a script that will simplify the creation of the database. Type at the terminal:
 
-    wget -O quotations.sql http://goo.gl/k9Uix2
+    wget -O quotations.sql https://goo.gl/Sh62e6
 
 To execute the `quotations.sql` script, open the Cloud9 MySQL command tool. At the terminal type:
 
@@ -768,7 +768,7 @@ The output should be something like:
 
 . Download the `json-simple` JAR file. This allows us to work with JSON in Java. At the terminal type:
 +
-    wget -O json-simple-1.1.1.jar https://goo.gl/BYFvrm
+    wget -O json-simple-1.1.1.jar https://goo.gl/SDaU8W
 
 . Compile the program. Type:
 +
@@ -1209,7 +1209,7 @@ Specifically note the response's status code and the `location` header.
 
 === Workshop Repository
 
-You can download all the files related to this workshop (these notes, source code, solutions to exercises) from the following github repository:
+You can download all the files related to this workshop (these notes and the solutions to exercises) from the following github repository:
 
 * https://github.com/ariel-ortiz/sigcse2018-workshop102
 
