@@ -41,9 +41,9 @@ Because the communication between clients and server is carried out through a la
 
 IMPORTANT: It's assumed that you already have a Cloud9 account.
 
-. Go to Cloud9 (https://c9.io). If you land in the *AWS Cloud9* site press the *“Login for existing c9.io customers”* button in the lower right hand side of the page and login.
+. Login to the Cloud9 site (https://c9.io/login).
 
-. Create a workspace: give it a name and a brief description, in team select *“Don't set a team for this workspace”*, make it *public*, and select the *Blank* template.
+. Create a workspace: give it a name and a brief description. In team select *“Don't set a team for this workspace”*, make it *public*, and select the *Blank* template.
 +
 [WARNING]
 ====
@@ -96,7 +96,7 @@ Let's analyze this program:
 
 <6> Bind the application to a specific port (in this case the value of the environment variable `PORT`, which in practice is 8080) and start listening to client requests. The callback function is called once the binding has taken effect.
 
-<7> Print a message with the the name of our host computer (this is contained in the `C9_HOSTNAME` environment variable).
+<7> Print a message with the name of our host computer (this is contained in the `C9_HOSTNAME` environment variable).
 
 To test the code, do the following:
 
@@ -491,7 +491,7 @@ app.get('/quotations', (req, res) => {
 
 To test the server program, type at the terminal:
 
-    nodemon quotations_app
+    nodemon quotations_app.js
 
 Now run _curl_ as a client. At another terminal window, type:
 
@@ -1139,7 +1139,7 @@ Use _curl_ to test your code:
 
     curl localhost:8080/quotations/7 -X DELETE
 
-If the deletion is performed correclty the output should be a text message like this:
+If the deletion is performed correctly the output should be a text message like this:
 
     Resource with ID = 7 deleted successfully.
 
@@ -1225,6 +1225,6 @@ You can download all the files related to this workshop (these notes and the sol
 
 == Copyright and License
 
-* Copyright © 2016-2018 by Ariel Ortiz. 
-* This work is licensed under a http://creativecommons.org/licenses/by-nc-sa/4.0/[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License]. 
+* Copyright © 2016-2018 by Ariel Ortiz.
+* This work is licensed under a http://creativecommons.org/licenses/by-nc-sa/4.0/[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License].
 * Free use of the source code presented here is granted under the terms of the https://www.gnu.org/licenses/gpl-3.0.en.html[GPL version 3 License].
